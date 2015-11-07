@@ -84,8 +84,7 @@ public class ProcGenSTL {
                 }
             }
         }
-
-        //Close file?
+        stl.close();
     }
 
     private boolean neighbor(int i, int j, int k, Cell.Face face) {

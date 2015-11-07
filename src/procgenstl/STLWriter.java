@@ -65,5 +65,13 @@ class STLWriter {
             Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    void close() {
+        try {
+            fw.write("solid \n");
+        } catch (IOException ex) {
+            Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     
 }
