@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class ProcGenSTL {
 
-    private final int DIM = 10;
+    private final int DIM = 3;
     Cell[][][] cells = new Cell[DIM][DIM][DIM];
 
     /**
