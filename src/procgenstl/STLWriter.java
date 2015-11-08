@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  */
 class STLWriter {
     private final FileWriter fw;
-    private final int SCALE = 10;
+    private final int SCALE = 1;
     
     STLWriter(FileWriter writer) {
         fw = writer;
@@ -36,31 +36,29 @@ class STLWriter {
             //Calculate the 4 points needed
             Point[] points=new Point[4];
             points[0] = new Point( i+face.f0i, j+face.f0j, k+face.f0k );
-            points[1] = new Point( i+face.f0i, j+face.f0j+face.fnj, k+face.f0k+face.fnk );
-            points[2] = new Point( i+face.f0i+face.fni, j+face.f0j, k+face.f0k+face.fnk );
-            points[3] = new Point( i+face.f0i+face.fni, j+face.f0j+face.fnj, k+face.f0k );
-            
-            Point.sort( points );
+            points[1] = new Point( i+face.f1i, j+face.f1j, k+face.f1k );
+            points[2] = new Point( i+face.f2i, j+face.f2j, k+face.f2k );
+            points[3] = new Point( i+face.f3i, j+face.f3j, k+face.f3k );
             
             //'Bottom' Triangle
             fw.write("facet normal "+face.NORMAL+"\n");
-            fw.write("outer loop\n");
+            fw.write("\touter loop\n");
             
-            fw.write("vector "+points[0].vectorString(SCALE)+"\n");
-            fw.write("vector "+points[1].vectorString(SCALE)+"\n");
-            fw.write("vector "+points[3].vectorString(SCALE)+"\n");
+            fw.write("\t\tvertex "+points[0].vectorString(SCALE)+"\n");
+            fw.write("\t\tvertex "+points[1].vectorString(SCALE)+"\n");
+            fw.write("\t\tvertex "+points[2].vectorString(SCALE)+"\n");
             
-            fw.write("endloop\n endfacet\n");
+            fw.write("\tendloop\nendfacet\n");
             
             //'Top' Triangle
             fw.write("facet normal "+face.NORMAL+"\n");
-            fw.write("outer loop\n");
+            fw.write("\touter loop\n");
             
-            fw.write("vector "+points[0].vectorString(SCALE)+"\n");
-            fw.write("vector "+points[2].vectorString(SCALE)+"\n");
-            fw.write("vector "+points[3].vectorString(SCALE)+"\n");
+            fw.write("\t\tvertex "+points[1].vectorString(SCALE)+"\n");
+            fw.write("\t\tvertex "+points[3].vectorString(SCALE)+"\n");
+            fw.write("\t\tvertex "+points[2].vectorString(SCALE)+"\n");
             
-            fw.write("endloop\n endfacet\n");
+            fw.write("\tendloop\nendfacet\n");
         } catch (IOException ex) {
             Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -68,7 +66,7 @@ class STLWriter {
 
     void close() {
         try {
-            fw.write("solid \n");
+            fw.write("endsolid\n");
         } catch (IOException ex) {
             Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
         }
