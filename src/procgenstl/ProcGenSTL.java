@@ -28,28 +28,17 @@ public class ProcGenSTL {
      * Public Methods
      */
     public void write(String fn) {
-        FileWriter fw;
-        try {
-            fw = new FileWriter(fn);
-            write(fw);
-            fw.close();
-        } catch (IOException ex) {
-            Logger.getLogger(ProcGenSTL.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    /**
-     * Private Methods - Main
-     */
-    private void write(FileWriter writer) {
         //Initilize terrain data structure
         initilize();
         //Perform Generation Procedures
         generate();
         //Print terrain data to stl
-        print(writer);
+        print(fn);
     }
 
+    /**
+     * Private Methods - Main
+     */
     private void initilize() {
         //Each cell should be a new 0-value cell
         for (int i = 0; i < DIM; i++) {
@@ -65,31 +54,58 @@ public class ProcGenSTL {
         //For now the only procedure is to make some random cells 1
         //randomCells();
         perlinDensity();
+        //cells[0][0][0].type = 1;
+        
+        waterTable( 5 );
     }
 
-    private void print(FileWriter writer) {
-        STLWriter stl = new STLWriter(writer);
-        stl.writeHeader("ProcGenTest");
-
-        //For each cell
-        //For each face
-        //If neighbor-less, add triangles for that face.
-        Cell c;
-        for (int i = 0; i < DIM; i++) {
-            for (int j = 0; j < DIM; j++) {
-                for (int k = 0; k < DIM; k++) {
-                    c = cells[i][j][k];
-                    if (c.type != 0) {
-                        for (Cell.Face f : Cell.Face.values()) {
-                            if (!neighbor(i, j, k, f)) {
-                                stl.addFace(i, j, k, f);
+    private void print(String fn) {
+        try {
+            STLWriter stl = new STLWriter(fn);
+            stl.writeHeader("ProcGenTest");
+            
+            //For each cell
+            //For each face
+            //If neighbor-less, add triangles for that face.
+            int facecount = 0;
+            Cell c;
+            for (int i = 0; i < DIM; i++) {
+                for (int j = 0; j < DIM; j++) {
+                    for (int k = 0; k < DIM; k++) {
+                        c = cells[i][j][k];
+                        if (c.type != 0) {
+                            for (Cell.Face f : Cell.Face.values()) {
+                                if (!neighbor(i, j, k, f)) {
+                                    facecount++;
+                                }
                             }
                         }
                     }
                 }
             }
+            
+            stl.writeHeader_Bin("Proctest", facecount);
+            
+            for (int i = 0; i < DIM; i++) {
+                for (int j = 0; j < DIM; j++) {
+                    for (int k = 0; k < DIM; k++) {
+                        c = cells[i][j][k];
+                        if (c.type != 0) {
+                            for (Cell.Face f : Cell.Face.values()) {
+                                if (!neighbor(i, j, k, f)) {
+                                    stl.addFace(i, j, k, f);
+                                    stl.addFace_Bin(i, j, k, f, c.type);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            stl.close();
+            stl.close_Bin();
+        } catch (IOException ex) {
+            Logger.getLogger(ProcGenSTL.class.getName()).log(Level.SEVERE, null, ex);
         }
-        stl.close();
     }
 
     private boolean neighbor(int i, int j, int k, Cell.Face face) {
@@ -123,7 +139,17 @@ public class ProcGenSTL {
             }
         }
     }
-
+    
+    private void waterTable( int h ){
+        for (int i = 0; i < DIM; i++) {
+            for (int j = 0; j < DIM; j++) {
+                for (int k = 0; k < DIM; k++) {
+                    
+                }
+            }
+        }
+    }
+    
     private void perlinDensity() {
 
         ModuleBasisFunction basis = new ModuleBasisFunction();
@@ -146,7 +172,7 @@ public class ProcGenSTL {
         for (int i = 0; i < DIM; i++) {
             for (int j = 0; j < DIM; j++) {
                 for (int k = 0; k < DIM; k++) {
-                    val = (scaleDomain.get(i, j, k) > 0.2*((float)DIM/(float)(j+1))) ? 0 : 1;
+                    val = (scaleDomain.get(i, j, k) > 0.2*((float)DIM/(float)(j+2))) ? 0 : 1;
                     cells[i][j][k].type = val;
                 }
             }
