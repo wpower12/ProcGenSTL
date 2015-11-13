@@ -5,13 +5,10 @@
  */
 package procgenstl;
 
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,20 +20,20 @@ class STLWriter {
 
     private final FileWriter fw;
     //private final ByteBuffer bb;
-    private final FileChannel ch;
-    
-    private final FileOutputStream fos;
-    
+    protected DataOutputStream ds;
+
     private final int SCALE = 1;
+
+    private byte[] buf;
 
     STLWriter(String fn) throws IOException {
         fw = new FileWriter(fn);
 
         //Binary
-        ch = new RandomAccessFile("bin_"+fn, "rw").getChannel();
-        
-        fos = new FileOutputStream( "bin_"+fn );
-        
+        ds = new DataOutputStream(new FileOutputStream("bin_" + fn));
+
+        buf = new byte[4];
+
     }
 
     void writeHeader(String solidname) {
@@ -89,66 +86,74 @@ class STLWriter {
         }
     }
 
-    void writeHeader_Bin(String proctest, int facecount) {
-        try {
-            byte[] head = new byte[80];
-            fos.write(head);
-            fos.write(2*facecount);
-        } catch (IOException ex) {
-            Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+    void addFace_Bin(int i, int j, int k, Cell.Face face, int type) throws IOException {
+        int rgb = 14430770;
+        Point[] points = new Point[4];
+        points[0] = new Point(i + face.f0i, j + face.f0j, k + face.f0k);
+        points[1] = new Point(i + face.f1i, j + face.f1j, k + face.f1k);
+        points[2] = new Point(i + face.f2i, j + face.f2j, k + face.f2k);
+        points[3] = new Point(i + face.f3i, j + face.f3j, k + face.f3k);
+        Point normal = new Point( face.di, face.dj, face.dk );
+        writeVector( normal );
+        writeVector(points[0]);
+        writeVector(points[1]);
+        writeVector(points[2]);
+        writeShort(formatRGB(rgb));
+        writeVector( normal );
+        writeVector(points[1]);
+        writeVector(points[3]);
+        writeVector(points[2]);
+        writeShort(formatRGB(rgb));
     }
 
-    void addFace_Bin(int i, int j, int k, Cell.Face face, int type) {
-        try {
-            Point[] points = new Point[4];
-            points[0] = new Point(i + face.f0i, j + face.f0j, k + face.f0k);
-            points[1] = new Point(i + face.f1i, j + face.f1j, k + face.f1k);
-            points[2] = new Point(i + face.f2i, j + face.f2j, k + face.f2k);
-            points[3] = new Point(i + face.f3i, j + face.f3j, k + face.f3k);
-            
-            fos.write((byte)points[0].i);
-            fos.write((byte)points[0].j);
-            fos.write((byte)points[0].k);
-            
-            fos.write((byte)points[1].i);
-            fos.write((byte)points[1].j);
-            fos.write((byte)points[1].k);
-            
-            fos.write((byte)points[2].i);
-            fos.write((byte)points[2].j);
-            fos.write((byte)points[2].k);
-            
-            short c=1;
-            fos.write(c);
-            
-            fos.write((byte)points[1].i);
-            fos.write((byte)points[1].j);
-            fos.write((byte)points[1].k);
-            
-            fos.write((byte)points[3].i);
-            fos.write((byte)points[3].j);
-            fos.write((byte)points[3].k);
-            
-            fos.write((byte)points[2].i);
-            fos.write((byte)points[2].j);
-            fos.write((byte)points[2].k);
-            
-            fos.write(c);
-        } catch (IOException ex) {
-            Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    private final void prepareBuffer(int a) {
+		buf[3] = (byte) (a >>> 24);
+		buf[2] = (byte) (a >> 16 & 0xff);
+		buf[1] = (byte) (a >> 8 & 0xff);
+		buf[0] = (byte) (a & 0xff);
+	}
+    
+    protected void writeFloat(float a) throws IOException {
+        prepareBuffer(Float.floatToRawIntBits(a));
+        ds.write(buf, 0, 4);
     }
 
-    void close_Bin() {
-        try {
-            fos.flush();
-            fos.close();
-            //bb.clear();
-        } catch (IOException ex) {
-            Logger.getLogger(STLWriter.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    protected void writeHeader_Bin(int num) throws IOException {
+        byte[] header = new byte[80];
+        ds.write(header, 0, 80);
+        writeInt(num);
     }
+
+    protected void writeInt(int a) throws IOException {
+        prepareBuffer(a);
+        ds.write(buf, 0, 4);
+    }
+
+    protected void writeShort(int a) throws IOException {
+        ds.writeByte(a & 0xff);
+        ds.writeByte(a >> 8 & 0xff);
+    }
+
+    protected void writeVector(Point p) throws IOException {
+        writeFloat(p.i * SCALE);
+        writeFloat(p.j * SCALE);
+        writeFloat(p.k * SCALE);
+    }
+
+    public int formatRGB(int rgb) {
+        int col15bits = (rgb >> 3 & 0x1f);
+        col15bits |= (rgb >> 11 & 0x1f) << 5;
+        col15bits |= (rgb >> 19 & 0x1f) << 10;
+        col15bits |= 0x8000;
+        return col15bits;
+    }
+    public void endSave() {
+		try {
+			ds.flush();
+			ds.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 }

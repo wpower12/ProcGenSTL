@@ -84,7 +84,7 @@ public class ProcGenSTL {
                 }
             }
             
-            stl.writeHeader_Bin("Proctest", facecount);
+            stl.writeHeader_Bin(2*facecount);
             
             for (int i = 0; i < DIM; i++) {
                 for (int j = 0; j < DIM; j++) {
@@ -93,7 +93,6 @@ public class ProcGenSTL {
                         if (c.type != 0) {
                             for (Cell.Face f : Cell.Face.values()) {
                                 if (!neighbor(i, j, k, f)) {
-                                    stl.addFace(i, j, k, f);
                                     stl.addFace_Bin(i, j, k, f, c.type);
                                 }
                             }
@@ -102,7 +101,7 @@ public class ProcGenSTL {
                 }
             }
             stl.close();
-            stl.close_Bin();
+            stl.endSave();
         } catch (IOException ex) {
             Logger.getLogger(ProcGenSTL.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -151,28 +150,29 @@ public class ProcGenSTL {
     }
     
     private void perlinDensity() {
-
+        Random r = new Random();
         ModuleBasisFunction basis = new ModuleBasisFunction();
         basis.setType(BasisType.SIMPLEX);
-
+        
+        basis.setSeed(r.nextLong());
         ModuleAutoCorrect correct = new ModuleAutoCorrect();
         correct.setSource(basis);
 
-        correct.setSampleScale(1.0);
+        correct.setSampleScale(0.5);
 
         correct.calculate();
 
         ModuleScaleDomain scaleDomain = new ModuleScaleDomain();
         scaleDomain.setSource(correct);
-        scaleDomain.setScaleX(0.025);
+        scaleDomain.setScaleX(0.0275);
         scaleDomain.setScaleY(0.055);
-        scaleDomain.setScaleZ(0.025);
+        scaleDomain.setScaleZ(0.0275);
         
         int val;
         for (int i = 0; i < DIM; i++) {
             for (int j = 0; j < DIM; j++) {
                 for (int k = 0; k < DIM; k++) {
-                    val = (scaleDomain.get(i, j, k) > 0.2*((float)DIM/(float)(j+2))) ? 0 : 1;
+                    val = (scaleDomain.get(i, j, k) > 0.2*((float)DIM/(float)(j+4))) ? 0 : 1;
                     cells[i][j][k].type = val;
                 }
             }
