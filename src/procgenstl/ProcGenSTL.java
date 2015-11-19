@@ -1,43 +1,35 @@
- /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package procgenstl;
 
+import com.sudoplay.joise.Joise;
 import com.sudoplay.joise.module.ModuleAutoCorrect;
 import com.sudoplay.joise.module.ModuleBasisFunction;
 import com.sudoplay.joise.module.ModuleBasisFunction.BasisType;
 import com.sudoplay.joise.module.ModuleScaleDomain;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * Generates a STL File representing a procedurally generated terrain over a
+ * voxel space.  Generating noise provided by the Joise library:
+ * 
+ * https://github.com/SudoPlayGames/Joise
+ * 
  * @author wpower
  */
 public class ProcGenSTL {
-
     private final int DIM = 50;
     Cell[][][] cells = new Cell[DIM][DIM][DIM];
 
-    /**
-     * Public Methods
-     */
     public void write(String fn) {
-        //Initilize terrain data structure
         initilize();
-        //Perform Generation Procedures
         generate();
-        //Print terrain data to stl
         print(fn);
     }
-
+    
     /**
-     * Private Methods - Main
+     * Private Methods
      */
     private void initilize() {
         //Each cell should be a new 0-value cell
@@ -51,59 +43,105 @@ public class ProcGenSTL {
     }
 
     private void generate() {
-        //For now the only procedure is to make some random cells 1
-        //randomCells();
         perlinDensity();
-        //cells[0][0][0].type = 1;
-        
-        waterTable( 5 );
+        //waterTable( 5 );
     }
 
     private void print(String fn) {
         try {
             STLWriter stl = new STLWriter(fn);
-            stl.writeHeader("ProcGenTest");
-            
-            //For each cell
-            //For each face
-            //If neighbor-less, add triangles for that face.
-            int facecount = 0;
-            Cell c;
-            for (int i = 0; i < DIM; i++) {
-                for (int j = 0; j < DIM; j++) {
-                    for (int k = 0; k < DIM; k++) {
-                        c = cells[i][j][k];
-                        if (c.type != 0) {
-                            for (Cell.Face f : Cell.Face.values()) {
-                                if (!neighbor(i, j, k, f)) {
-                                    facecount++;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            stl.writeHeader_Bin(2*facecount);
-            
-            for (int i = 0; i < DIM; i++) {
-                for (int j = 0; j < DIM; j++) {
-                    for (int k = 0; k < DIM; k++) {
-                        c = cells[i][j][k];
-                        if (c.type != 0) {
-                            for (Cell.Face f : Cell.Face.values()) {
-                                if (!neighbor(i, j, k, f)) {
-                                    stl.addFace_Bin(i, j, k, f, c.type);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            stl.close();
+            stl.writeHeader(2 * faceCount());
+            addFaces( stl );
             stl.endSave();
         } catch (IOException ex) {
             Logger.getLogger(ProcGenSTL.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * Private Methods - Terrain Procedures
+     */
+    private void perlinDensity() {
+        Random r = new Random();
+        
+        ModuleBasisFunction basis = new ModuleBasisFunction();
+        basis.setType(BasisType.SIMPLEX);
+        basis.setSeed(r.nextLong());
+        
+        ModuleAutoCorrect correct = new ModuleAutoCorrect();
+        correct.setSource(basis);
+        correct.setSampleScale(0.5);
+        correct.calculate();
+
+        ModuleScaleDomain scaleDomain = new ModuleScaleDomain();
+        scaleDomain.setSource(correct);
+        scaleDomain.setScaleX(0.0275);
+        scaleDomain.setScaleY(0.055);
+        scaleDomain.setScaleZ(0.0275);
+        
+        //Joise lets us save a set of chained procedures
+        Joise ourGenerator = new Joise( scaleDomain.getModuleMap() );
+        
+        int val;
+        for (int i = 0; i < DIM; i++) {
+            for (int j = 0; j < DIM; j++) {
+                for (int k = 0; k < DIM; k++) {
+                    val = (ourGenerator.get(i, j, k) > 0.2 * ((float) DIM / (float) (j + 4))) ? 0 : 1;
+                    cells[i][j][k].type = val;
+                }
+            }
+        }
+    }
+    
+    private void waterTable(int h) {
+        for (int i = 0; i < DIM; i++) {
+            for (int j = 0; j < DIM; j++) {
+                for (int k = 0; k < DIM; k++) {
+                    cells[i][j][k].type = 2;
+                }
+            }
+        }
+    }
+
+    
+    /**
+     * Private Methods - Writing Faces to the stl writer class.
+     */
+    private int faceCount() {
+        int facecount = 0;
+        Cell c;
+        for (int i = 0; i < DIM; i++) {
+            for (int j = 0; j < DIM; j++) {
+                for (int k = 0; k < DIM; k++) {
+                    c = cells[i][j][k];
+                    if (c.type != 0) {
+                        for (Cell.Face f : Cell.Face.values()) {
+                            if (!neighbor(i, j, k, f)) {
+                                facecount++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return facecount;
+    }
+
+    private void addFaces( STLWriter stl ) throws IOException {
+        Cell c;
+        for (int i = 0; i < DIM; i++) {
+            for (int j = 0; j < DIM; j++) {
+                for (int k = 0; k < DIM; k++) {
+                    c = cells[i][j][k];
+                    if (c.type != 0) {
+                        for (Cell.Face f : Cell.Face.values()) {
+                            if (!neighbor(i, j, k, f)) {
+                                stl.addFace_Bin(i, j, k, f, c.type);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -123,67 +161,13 @@ public class ProcGenSTL {
     private boolean inBounds(int ni, int nj, int nk) {
         return (ni > 0) && (ni < DIM - 1) && (nj > 0) && (nj < DIM - 1) && (nk > 0) && (nk < DIM - 1);
     }
-
-    /**
-     * Private Methods - Terrain Procedures
-     */
-    private void randomCells() {
-        Random r = new Random();
-        //Iterate and set.
-        for (int i = 0; i < DIM; i++) {
-            for (int j = 0; j < DIM; j++) {
-                for (int k = 0; k < DIM; k++) {
-                    cells[i][j][k].type = r.nextInt(2);
-                }
-            }
-        }
-    }
     
-    private void waterTable( int h ){
-        for (int i = 0; i < DIM; i++) {
-            for (int j = 0; j < DIM; j++) {
-                for (int k = 0; k < DIM; k++) {
-                    
-                }
-            }
-        }
-    }
-    
-    private void perlinDensity() {
-        Random r = new Random();
-        ModuleBasisFunction basis = new ModuleBasisFunction();
-        basis.setType(BasisType.SIMPLEX);
-        
-        basis.setSeed(r.nextLong());
-        ModuleAutoCorrect correct = new ModuleAutoCorrect();
-        correct.setSource(basis);
-
-        correct.setSampleScale(0.5);
-
-        correct.calculate();
-
-        ModuleScaleDomain scaleDomain = new ModuleScaleDomain();
-        scaleDomain.setSource(correct);
-        scaleDomain.setScaleX(0.0275);
-        scaleDomain.setScaleY(0.055);
-        scaleDomain.setScaleZ(0.0275);
-        
-        int val;
-        for (int i = 0; i < DIM; i++) {
-            for (int j = 0; j < DIM; j++) {
-                for (int k = 0; k < DIM; k++) {
-                    val = (scaleDomain.get(i, j, k) > 0.2*((float)DIM/(float)(j+4))) ? 0 : 1;
-                    cells[i][j][k].type = val;
-                }
-            }
-        }
-    }
-
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         ProcGenSTL gen = new ProcGenSTL();
-        gen.write("test.stl");
+        gen.write("test");
     }
+
 }
