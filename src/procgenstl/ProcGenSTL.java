@@ -87,6 +87,11 @@ public class ProcGenSTL {
         for (int i = 0; i < DIM; i++) {
             for (int j = 0; j < DIM; j++) {
                 for (int k = 0; k < DIM; k++) {
+                    //If our generators value is greater than some a threshold value, place empty space (0)
+                    //If not, place solid (1)
+                    //We want this to be harder near the bottom of our space, and easier at the top
+                    //To get this effect, we scale the threshold with the dimension we choose as height (j)
+                    // rand( s.x * i, s.y * j, s.z * k) > T * t( j ),  t(j) = B/(j+C)
                     val = (ourGenerator.get(i, j, k) > 0.2 * ((float) DIM / (float) (j + 4))) ? 0 : 1;
                     cells[i][j][k].type = val;
                 }

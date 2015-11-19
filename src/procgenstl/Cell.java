@@ -5,7 +5,6 @@ package procgenstl;
  * @author wpower
  */
 class Cell {
-    
     //Who needs vector math?  Well, technically still us.  But who needs Math.*?  Not us!  HAHAHAHAHAHAHAHA
     public static enum Face {                                          
         //    (  normal  )(   p0  )(  p1   )(  p2   )(   p3  )
