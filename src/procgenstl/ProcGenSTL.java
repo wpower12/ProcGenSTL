@@ -12,13 +12,14 @@ import java.util.logging.Logger;
 
 /**
  * Generates a STL File representing a procedurally generated terrain over a
- * voxel space.  Generating noise provided by the Joise library:
- * 
+ * voxel space. Generating noise provided by the Joise library:
+ *
  * https://github.com/SudoPlayGames/Joise
- * 
+ *
  * @author wpower
  */
 public class ProcGenSTL {
+
     private final int DIM = 50;
     Cell[][][] cells = new Cell[DIM][DIM][DIM];
 
@@ -27,7 +28,7 @@ public class ProcGenSTL {
         generate();
         print(fn);
     }
-    
+
     /**
      * Private Methods
      */
@@ -51,7 +52,7 @@ public class ProcGenSTL {
         try {
             STLWriter stl = new STLWriter(fn);
             stl.writeHeader(2 * faceCount());
-            addFaces( stl );
+            addFaces(stl);
             stl.endSave();
         } catch (IOException ex) {
             Logger.getLogger(ProcGenSTL.class.getName()).log(Level.SEVERE, null, ex);
@@ -63,11 +64,11 @@ public class ProcGenSTL {
      */
     private void perlinDensity() {
         Random r = new Random();
-        
+
         ModuleBasisFunction basis = new ModuleBasisFunction();
         basis.setType(BasisType.SIMPLEX);
         basis.setSeed(r.nextLong());
-        
+
         ModuleAutoCorrect correct = new ModuleAutoCorrect();
         correct.setSource(basis);
         correct.setSampleScale(0.5);
@@ -78,10 +79,10 @@ public class ProcGenSTL {
         scaleDomain.setScaleX(0.0275);
         scaleDomain.setScaleY(0.055);
         scaleDomain.setScaleZ(0.0275);
-        
+
         //Joise lets us save a set of chained procedures
-        Joise ourGenerator = new Joise( scaleDomain.getModuleMap() );
-        
+        Joise ourGenerator = new Joise(scaleDomain.getModuleMap());
+
         int val;
         for (int i = 0; i < DIM; i++) {
             for (int j = 0; j < DIM; j++) {
@@ -92,7 +93,7 @@ public class ProcGenSTL {
             }
         }
     }
-    
+
     private void waterTable(int h) {
         for (int i = 0; i < DIM; i++) {
             for (int j = 0; j < DIM; j++) {
@@ -103,7 +104,6 @@ public class ProcGenSTL {
         }
     }
 
-    
     /**
      * Private Methods - Writing Faces to the stl writer class.
      */
@@ -127,7 +127,7 @@ public class ProcGenSTL {
         return facecount;
     }
 
-    private void addFaces( STLWriter stl ) throws IOException {
+    private void addFaces(STLWriter stl) throws IOException {
         Cell c;
         for (int i = 0; i < DIM; i++) {
             for (int j = 0; j < DIM; j++) {
@@ -161,7 +161,7 @@ public class ProcGenSTL {
     private boolean inBounds(int ni, int nj, int nk) {
         return (ni > 0) && (ni < DIM - 1) && (nj > 0) && (nj < DIM - 1) && (nk > 0) && (nk < DIM - 1);
     }
-    
+
     /**
      * @param args the command line arguments
      */
